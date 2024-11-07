@@ -1,3 +1,5 @@
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+
 # 🔮 The Orb - SwiftUI
 
 A beautiful, highly customizable animated orb component using SwiftUI. Create mesmerizing, interactive orbs with glowing effects, particles, and dynamic animations.
