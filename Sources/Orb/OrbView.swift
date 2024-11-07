@@ -44,97 +44,48 @@ public struct OrbConfiguration {
 
 public struct OrbView: View {
     let configuration: OrbConfiguration
-
-    private var glowColor: Color { configuration.glowColor }
-    private var orbElementsSpeed: Double { configuration.speed }
+    
+    // Cache computed properties
+    private let glowColor: Color
+    private let orbElementsSpeed: Double
     
     public init(configuration: OrbConfiguration = OrbConfiguration()) {
         self.configuration = configuration
+        self.glowColor = configuration.glowColor
+        self.orbElementsSpeed = configuration.speed
     }
-
+    
     public var body: some View {
         GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
-
+            
             ZStack {
-                // Base environment gradient background
                 if configuration.showBackground {
                     background
                 }
-
-                // Outer glow effect - creates a soft halo
-                BackgroundView(color: glowColor,
-                               rotationSpeed: orbElementsSpeed * 0.75,
-                               direction: .counterClockwise)
-                    .padding(size * 0.03)
-                    .blur(radius: size * 0.06)
-                    .rotationEffect(.degrees(180))
-                    .blendMode(.destinationOver)
-
-                // Outer ring element - creates contrast
-                BackgroundView(color: glowColor.opacity(0.5),
-                               rotationSpeed: orbElementsSpeed * 0.25,
-                               direction: .clockwise)
-                    .frame(maxWidth: size * 0.94)
-                    .rotationEffect(.degrees(180))
-                    .padding(8)
-                    .blur(radius: size * 0.032)
-
-                // Organic movement elements
+                
+                // Combine glow effects into single layer
+                glowEffectsLayer(size: size)
+                    .drawingGroup() // Use Metal rendering
+                
                 if configuration.showWavyBlobs {
-                    wavyBlob // Lower wavy blob
-                    wavyBlobTwo // Upper wavy blob
+                    wavyBlobsLayer(size: size)
+                        .drawingGroup()
                 }
-
-                if configuration.showGlowEffects {
-                    // Core glow effects
-                    ZStack {
-                        // Primary core glow - fast rotation
-                        BackgroundView(color: glowColor,
-                                       rotationSpeed: orbElementsSpeed * 3,
-                                       direction: .clockwise)
-                            .blur(radius: size * 0.08)
-                            .opacity(configuration.coreGlowIntensity)
-
-                        // Secondary core glow - creates layered effect
-                        BackgroundView(color: glowColor,
-                                       rotationSpeed: orbElementsSpeed * 2.3,
-                                       direction: .clockwise)
-                            .blur(radius: size * 0.06)
-                            .opacity(configuration.coreGlowIntensity)
-                            .blendMode(.plusLighter)
-                    }
-                    .padding(size * 0.08)
-                }
-
-                // Floating particle effects
+                
                 if configuration.showParticles {
                     particleView
                         .frame(maxWidth: size, maxHeight: size)
                 }
             }
-            // Orb outline for depth
             .overlay {
-                ZStack {
-                    // Outer stroke with heavy blur
-                    Circle()
-                        .stroke(orbOutlineColor, lineWidth: 6)
-                        .blur(radius: 12)
-
-                    // Inner stroke with light blur
-                    Circle()
-                        .stroke(orbOutlineColor, lineWidth: 4)
-                        .blur(radius: 8)
-                        .blendMode(.plusLighter)
-                }
-                .padding(1)
+                orbOutlineLayer
+                    .drawingGroup()
             }
-            // Masking out all the effects so it forms a perfect circle
             .mask {
                 Circle()
             }
             .aspectRatio(1, contentMode: .fit)
-            // Adding realistic, layered shadows so its brighter near the core, and softer as it grows outwards
             .modifier(
                 RealisticShadowModifier(
                     colors: configuration.showShadow ? configuration.backgroundColors : [.clear],
@@ -143,7 +94,24 @@ public struct OrbView: View {
             )
         }
     }
-
+    
+    // Extract layers into separate views for better performance
+    private func glowEffectsLayer(size: CGFloat) -> some View {
+        ZStack {
+            BackgroundView(color: glowColor,
+                         rotationSpeed: orbElementsSpeed * 0.75,
+                         direction: .counterClockwise)
+                .padding(size * 0.03)
+                .blur(radius: size * 0.06)
+                .rotationEffect(.degrees(180))
+                .blendMode(.destinationOver)
+            
+            if configuration.showGlowEffects {
+                coreGlowEffects(size: size)
+            }
+        }
+    }
+    
     var background: some View {
         LinearGradient(colors: configuration.backgroundColors,
                        startPoint: .bottom,

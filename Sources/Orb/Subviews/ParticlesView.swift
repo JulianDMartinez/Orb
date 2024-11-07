@@ -126,15 +126,19 @@ class ParticleScene: SKScene {
 }
 
 struct ParticlesView: View {
-    let color: Color
-    let speedRange: ClosedRange<Double>
-    let sizeRange: ClosedRange<CGFloat>
-    let particleCount: Int
-    let opacityRange: ClosedRange<Double>
+    // Cache the scene to prevent recreating it
+    private let scene: SKScene
     
-    var scene: SKScene {
-        let scene = ParticleScene(
-            size: CGSize(width: 300, height: 300), // Use fixed size
+    init(
+        color: Color,
+        speedRange: ClosedRange<Double>,
+        sizeRange: ClosedRange<CGFloat>,
+        particleCount: Int,
+        opacityRange: ClosedRange<Double>
+    ) {
+        // Create scene once during initialization
+        scene = ParticleScene(
+            size: CGSize(width: 300, height: 300),
             color: UIColor(color),
             speedRange: speedRange,
             sizeRange: sizeRange,
@@ -142,14 +146,13 @@ struct ParticlesView: View {
             opacityRange: opacityRange
         )
         scene.scaleMode = .aspectFit
-        return scene
     }
     
     var body: some View {
         GeometryReader { geometry in
             SpriteView(scene: scene, options: [.allowsTransparency])
                 .frame(width: geometry.size.width, height: geometry.size.height)
-                .ignoresSafeArea()
+                .drawingGroup()
         }
     }
 }
